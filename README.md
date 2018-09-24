@@ -43,6 +43,9 @@ pure lua: decode url system: 10.160     user: 0.060     total: 10.220   real: 10
 encodeurl: decode url system: 0.260     user: 0.040     total: 0.300    real: 0.375
 ```
 
+- urlencode's encoding is about **64 times faster** than pure lua implementation
+- urlencode's decoding is about **39 times faster** than pure lua implementation
+
 Original code
 --
 
