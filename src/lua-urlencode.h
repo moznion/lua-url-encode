@@ -15,6 +15,7 @@ extern "C" {
 
 #include <stdlib.h>
 #include <string.h>
+#include <locale.h>
 
 #define URL_ENCODE_VERSION "0.0.1-0"
 #define URL_ENCODE_LIBNAME "urlencode"
