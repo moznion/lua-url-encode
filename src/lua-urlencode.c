@@ -20,50 +20,16 @@ static const int url_unreserved[256] = {
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xF0-0xFF */
 };
 
-static char* _encode_url(const char* input) {
-    const long len = strlen(input);
-    const char* endmarker = input + len;
-    char* encoded;
-    encoded = (char*)malloc(sizeof(char) * len * 3 + 1);
-
-    for (int i = 0; input < endmarker; input++) {
-        const int c = *input;
-
-        if (url_unreserved[c]) {
-            encoded[i++] = c;
-            continue;
-        }
-
-        if (c == ' ') {
-            encoded[i++] = '+';
-            continue;
-        }
-
-        encoded[i++] = '%';
-        encoded[i++] = xdigit[c >> 4];
-        encoded[i++] = xdigit[c & 15];
-    }
-
-    return encoded;
-}
-
-static int encode_url (lua_State* L) {
-    const unsigned char* input = luaL_checkstring(L, 1);
-    const unsigned char* encoded = _encode_url(input);
-    lua_pushstring(L, encoded);
-    return 1;
-}
-
 typedef struct {
     char* got;
     char* err;
-} result_encode_mb_t;
+} urlencode_result_t;
 
-static result_encode_mb_t _encode_mb_url(const unsigned char* input, const char* encoding) {
+static urlencode_result_t _encode_url(const unsigned char* input, const char* encoding) {
     if (setlocale(LC_CTYPE, encoding) == NULL) {
         const char* errmsg = "failed to configure the locale";
         printf("%s\n", errmsg);
-        const result_encode_mb_t result = {"", errmsg};
+        const urlencode_result_t result = {"", errmsg};
         return result;
     }
 
@@ -80,7 +46,7 @@ static result_encode_mb_t _encode_mb_url(const unsigned char* input, const char*
         if (charlen < 0) {
             const char* errmsg = "invalid character has come";
             printf("%s\n", errmsg);
-            const result_encode_mb_t result = {"", errmsg};
+            const urlencode_result_t result = {"", errmsg};
             return result;
         }
 
@@ -112,14 +78,14 @@ static result_encode_mb_t _encode_mb_url(const unsigned char* input, const char*
     }
     encoded[out_cursor] = '\0';
 
-    const result_encode_mb_t result = {encoded, ""};
+    const urlencode_result_t result = {encoded, ""};
     return result;
 }
 
-static int encode_mb_url (lua_State* L) {
+static int encode_url (lua_State* L) {
     const unsigned char* input = luaL_checkstring(L, 1);
     const unsigned char* encoding = luaL_checkstring(L, 2);
-    const result_encode_mb_t result = _encode_mb_url(input, encoding);
+    const urlencode_result_t result = _encode_url(input, encoding);
 
     lua_pushstring(L, result.got);
 
@@ -154,63 +120,11 @@ static const int hexval[256] = {
 };
 #undef __
 
-static char* _decode_url(const unsigned char* input) {
-    const long len = strlen(input);
-    const char* endmarker = input + len - 2;
-    char* decoded;
-    decoded = (char*)malloc(sizeof(char) * len + 1);
-
-    int i = 0;
-    for (; input < endmarker; input++, i++) {
-        const unsigned int c = *input;
-
-        if (c == '+') {
-            decoded[i] = ' ';
-            continue;
-        }
-
-        if (c != '%') {
-            decoded[i] = c;
-            continue;
-        }
-
-        const unsigned int v1 = hexval[(unsigned int)*++input];
-        const unsigned int v2 = hexval[(unsigned int)*++input];
-        if ((v1 | v2) != 0xFF) {
-            decoded[i] = (v1 << 4) | v2;
-            continue;
-        }
-
-        decoded[i] = c;
-        input -= 2;
-    }
-
-    endmarker += 2;
-    for (; input < endmarker; input++, i++) {
-        const int c = *input;
-        if (c == '+') {
-            decoded[i] = ' ';
-            continue;
-        }
-
-        decoded[i] = c;
-    }
-
-    return decoded;
-}
-
-static int decode_url (lua_State* L) {
-    const unsigned char* input = luaL_checkstring(L, 1);
-    const unsigned char* decoded = _decode_url(input);
-    lua_pushstring(L, decoded);
-    return 1;
-}
-
-static result_encode_mb_t _decode_mb_url(const unsigned char* input, const char* encoding) {
+static urlencode_result_t _decode_url(const unsigned char* input, const char* encoding) {
     if (setlocale(LC_CTYPE, encoding) == NULL) {
         const char* errmsg = "failed to configure the locale";
         printf("%s\n", errmsg);
-        const result_encode_mb_t result = {"", errmsg};
+        const urlencode_result_t result = {"", errmsg};
         return result;
     }
 
@@ -227,7 +141,7 @@ static result_encode_mb_t _decode_mb_url(const unsigned char* input, const char*
         if (charlen < 0) {
             const char* errmsg = "invalid character has come";
             printf("%s\n", errmsg);
-            const result_encode_mb_t result = {"", errmsg};
+            const urlencode_result_t result = {"", errmsg};
             return result;
         }
 
@@ -267,14 +181,14 @@ static result_encode_mb_t _decode_mb_url(const unsigned char* input, const char*
     }
     decoded[out_cursor] = '\0';
 
-    const result_encode_mb_t result = {decoded, ""};
+    const urlencode_result_t result = {decoded, ""};
     return result;
 }
 
-static int decode_mb_url (lua_State* L) {
+static int decode_url (lua_State* L) {
     const unsigned char* input = luaL_checkstring(L, 1);
     const unsigned char* encoding = luaL_checkstring(L, 2);
-    const result_encode_mb_t result = _decode_mb_url(input, encoding);
+    const urlencode_result_t result = _decode_url(input, encoding);
 
     lua_pushstring(L, result.got);
 
@@ -290,9 +204,7 @@ static int decode_mb_url (lua_State* L) {
 
 static const struct luaL_Reg R[] = {
     {"encode_url", encode_url},
-    {"encode_mb_url", encode_mb_url},
     {"decode_url", decode_url},
-    {"decode_mb_url", decode_mb_url},
     {NULL, NULL},
 };
 
