@@ -1,16 +1,6 @@
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
-
-#include <stdlib.h>
-#include <string.h>
-
 #include "lua-urlencode.h"
 
-#define URL_ENCODE_VERSION "0.0.1"
-#define URL_ENCODE_LIBNAME "urlencode"
-
-static char* encode_url(const char* input) {
+static char* _encode_url(const char* input) {
     static const char xdigit[16] = "0123456789ABCDEF";
     static const int url_unreserved[256] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0x00-0x0F */
@@ -57,7 +47,14 @@ static char* encode_url(const char* input) {
     return encoded;
 }
 
-static char* decode_url(const char* input) {
+static int encode_url (lua_State* L) {
+    const char* input = luaL_checkstring(L, 1);
+    const char* encoded = _encode_url(input);
+    lua_pushstring(L, encoded);
+    return 1;
+}
+
+static char* _decode_url(const char* input) {
 #define __ 256
     static const int hexval[256] = {
         __,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__, /* 00-0F */
@@ -122,3 +119,50 @@ static char* decode_url(const char* input) {
 
     return decoded;
 }
+
+static int decode_url (lua_State* L) {
+    const char* input = luaL_checkstring(L, 1);
+    const char* decoded = _decode_url(input);
+    lua_pushstring(L, decoded);
+    return 1;
+}
+
+static const struct luaL_Reg R[] = {
+    {"encode_url", encode_url},
+    {"decode_url", decode_url},
+    {NULL, NULL},
+};
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+LUALIB_API int luaopen_urlencode(lua_State * L) {
+    /*
+     * Register module
+     */
+#if !defined(LUA_VERSION_NUM) || LUA_VERSION_NUM < 502 // lua < 5.2
+    luaL_register(L, URL_ENCODE_LIBNAME, R);
+#else
+    lua_newtable(L);
+    luaL_setfuncs(L, R, 0);
+#endif
+
+    /*
+     * Register module information
+     */
+    lua_pushliteral(L, URL_ENCODE_VERSION);
+    lua_setfield(L, -2, "_VERSION");
+
+    lua_pushliteral(L, URL_ENCODE_COPYRIGHT);
+    lua_setfield(L, -2, "_COPYRIGHT");
+
+    lua_pushliteral(L, URL_ENCODE_DESCRIPTION);
+    lua_setfield(L, -2, "_DESCRIPTION");
+
+    return 1;
+}
+
+#ifdef __cplusplus
+}
+#endif
