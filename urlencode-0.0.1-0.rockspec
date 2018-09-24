@@ -3,7 +3,7 @@ version = "0.0.1-0"
 
 source = {
     url = "git://github.com/moznion/lua-url-encode.git",
-    branch = "v0.0.1",
+    branch = "v0.0.1-0",
 }
 
 description = {
