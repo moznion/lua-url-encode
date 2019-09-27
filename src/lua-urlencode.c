@@ -59,7 +59,8 @@ static uint8_t* _encode_url(const uint8_t* input) {
             continue;
         }
 
-        for (int i = 0; i < charlen; i++, in_cursor++) {
+        int i;
+        for (i = 0; i < charlen; i++, in_cursor++) {
             const uint8_t c = input[in_cursor];
             encoded[out_cursor++] = '%';
             encoded[out_cursor++] = xdigit[c >> 4];
@@ -146,7 +147,8 @@ static uint8_t* _decode_url(const uint8_t* input) {
             continue;
         }
 
-        for (int i = 0; i < charlen; i++, in_cursor++) {
+        int i;
+        for (i = 0; i < charlen; i++, in_cursor++) {
             const uint8_t c = input[in_cursor];
             decoded[out_cursor++] = c;
         }
